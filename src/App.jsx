@@ -183,7 +183,7 @@ export default function App() {
             <span>การชำระเงิน:</span>
             <span>
               ${data.payment === "cash" ? "เงินสด" : ""}
-              ${data.payment === "transfer" ? "โอน" : ""}
+              ${data.payment === "transfer" ? "PromptPay" : ""}
               ${data.payment === "lineman" ? "LINE MAN" : ""}
             </span>
           </div>
@@ -210,7 +210,7 @@ export default function App() {
           <div class="total-row"><span>เงินเปิดวัน:</span><span>${data.openCash.toLocaleString()}</span></div>
           <div class="total-row grand-total"><span>ยอดขายรวม:</span><span>${data.totalSales.toLocaleString()}</span></div>
           <div class="total-row"><span>- เงินสด:</span><span>${data.cashSales.toLocaleString()}</span></div>
-          <div class="total-row"><span>- โอน:</span><span>${data.transferSales.toLocaleString()}</span></div>
+          <div class="total-row"><span>- PromptPay:</span><span>${data.transferSales.toLocaleString()}</span></div>
           <div class="total-row"><span>- LINE MAN:</span><span>${data.linemanSales.toLocaleString()}</span></div>
           <div class="divider"></div>
           <div class="total-row grand-total"><span>เงินสดที่ต้องส่ง:</span><span>${(data.openCash + data.cashSales).toLocaleString()}</span></div>
@@ -469,7 +469,7 @@ export default function App() {
                           setCashReceived("");
                         }}
                       >
-                        🏦 โอน
+                        📱 PromptPay
                       </button>
                       <button
                         className={`payment-btn ${payment === "lineman" ? "active" : ""}`}
@@ -516,10 +516,10 @@ export default function App() {
                     {payment === "transfer" && (
                       <div className="payment-summary-content">
                         <div className="summary-info-row">
-                          <span>ยอดรวม (โอน):</span>
+                          <span>ยอดรวม (PromptPay):</span>
                           <span className="summary-value">{total.toLocaleString()} บาท</span>
                         </div>
-                        <div className="payment-note">💰 โอนเงินแล้ว</div>
+                        <div className="payment-note">📱 PromptPay</div>
                       </div>
                     )}
                     {payment === "lineman" && (
@@ -597,7 +597,7 @@ export default function App() {
                     <span>การชำระเงิน:</span>
                     <span>
                       {printData.data.payment === "cash" && "เงินสด"}
-                      {printData.data.payment === "transfer" && "โอน"}
+                      {printData.data.payment === "transfer" && "PromptPay"}
                       {printData.data.payment === "lineman" && "LINE MAN"}
                     </span>
                   </div>
@@ -685,7 +685,7 @@ export default function App() {
                   <span className="amount">{cashSales.toLocaleString()} บาท</span>
                 </div>
                 <div className="summary-item">
-                  <span>🏦 โอน:</span>
+                  <span>📱 PromptPay:</span>
                   <span className="amount">{transferSales.toLocaleString()} บาท</span>
                 </div>
                 <div className="summary-item">
@@ -771,7 +771,7 @@ export default function App() {
                 <span>{printData.data.cashSales.toLocaleString()}</span>
               </div>
               <div className="print-row">
-                <span>- โอน:</span>
+                <span>- PromptPay:</span>
                 <span>{printData.data.transferSales.toLocaleString()}</span>
               </div>
               <div className="print-row">
@@ -878,7 +878,7 @@ export default function App() {
                             <span>{cashSales.toLocaleString()} บาท</span>
                           </div>
                           <div className="report-summary-row">
-                            <span>🏦 โอน:</span>
+                            <span>📱 PromptPay:</span>
                             <span>{transferSales.toLocaleString()} บาท</span>
                           </div>
                           <div className="report-summary-row">
@@ -894,7 +894,7 @@ export default function App() {
                                 <span className="bill-time">{b.time}</span>
                                 <span className={`bill-payment payment-${b.payment}`}>
                                   {b.payment === "cash" && "💵 เงินสด"}
-                                  {b.payment === "transfer" && "🏦 โอน"}
+                                  {b.payment === "transfer" && "📱 PromptPay"}
                                   {b.payment === "lineman" && "🛵 LINE MAN"}
                                 </span>
                                 <span className="bill-total">{b.total.toLocaleString()} บาท</span>
@@ -975,7 +975,7 @@ export default function App() {
                 <span>{printData.data.cashSales.toLocaleString()}</span>
               </div>
               <div className="print-row">
-                <span>- โอน:</span>
+                <span>- PromptPay:</span>
                 <span>{printData.data.transferSales.toLocaleString()}</span>
               </div>
               <div className="print-row">
