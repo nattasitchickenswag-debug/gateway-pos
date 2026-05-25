@@ -723,6 +723,19 @@ export default function App() {
                   setDayData(null);
                   localStorage.removeItem("currentDay");
 
+                  // Save to Google Sheets
+                  fetch("https://bbc-ordering-v1.vercel.app/api/gateway-pos/close-day", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      date: updatedDayData.date,
+                      openTime: updatedDayData.openTime,
+                      closeTime,
+                      openCash: updatedDayData.openCash,
+                      bills: updatedDayData.bills,
+                    }),
+                  }).catch((err) => console.error("close-day sheet error:", err));
+
                   // Print Close Day Summary
                   printCloseDay({ ...updatedDayData, totalSales, cashSales, transferSales, linemanSales });
 
