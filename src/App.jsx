@@ -150,13 +150,29 @@ export default function App() {
   const [editingBill, setEditingBill] = useState(null);
   const [editTotalValue, setEditTotalValue] = useState("");
 
+  const sendToPassPRNT = (htmlContent) => {
+    const encodedHtml = encodeURIComponent(htmlContent);
+    const backUrl = encodeURIComponent(window.location.href);
+    const url = `starpassprnt://v1/print/nopreview?html=${encodedHtml}&back=${backUrl}&size=3`;
+    window.location.href = url;
+  };
+
   useEffect(() => {
     if (printData) {
-      const timer = setTimeout(() => {
-        window.print();
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      if (isIOS) {
+        const html = generateReceiptHTML(printData);
+        sendToPassPRNT(html);
         setPrintData(null);
-      }, 200);
-      return () => clearTimeout(timer);
+      } else {
+        const timer = setTimeout(() => {
+          window.print();
+          setPrintData(null);
+        }, 200);
+        return () => clearTimeout(timer);
+      }
     }
   }, [printData]);
 
@@ -212,7 +228,7 @@ export default function App() {
       content = `
         <div class="header text-center">
           <div class="title">${BRANCH_NAME}</div>
-          <div class="info">วันที่: ${dayData?.date || ""} เวลา: ${data.time}</div>
+          <div class="info">วันที่: ${data.printDate || dayData?.date || ""} เวลา: ${data.time}</div>
         </div>
         <table>
           <thead>
@@ -282,8 +298,8 @@ export default function App() {
 
 
 
-  const printBill = (billData) => {
-    setPrintData({ type: "bill", data: billData });
+  const printBill = (billData, date) => {
+    setPrintData({ type: "bill", data: { ...billData, printDate: date } });
   };
 
   const printCloseDay = (closeDayData) => {
@@ -733,7 +749,7 @@ export default function App() {
               <>
                 <div className="print-header">
                   <h1 className="print-title">{BRANCH_NAME}</h1>
-                  <div className="print-info">วันที่: {dayData?.date} เวลา: {printData.data.time}</div>
+                  <div className="print-info">วันที่: {printData.data.printDate || dayData?.date} เวลา: {printData.data.time}</div>
                 </div>
                 <table className="print-table">
                   <thead>
@@ -924,6 +940,73 @@ export default function App() {
               <button style={{ flex: 1, padding: "12px", fontSize: "16px", background: "#2d7a3a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }} onClick={saveEditedBill}>บันทึก</button>
             </div>
           </div>
+        </div>
+      )}
+      {printData && printData.type === "bill" && (
+        <div className="print-area">
+          <div className="print-header">
+            <h1 className="print-title">{BRANCH_NAME}</h1>
+            <div className="print-info">วันที่: {printData.data.printDate || dayData?.date} เวลา: {printData.data.time}</div>
+          </div>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th style={{ width: '50%' }}>รายการ</th>
+                <th style={{ width: '20%' }}>จน.</th>
+                <th style={{ width: '30%' }} className="text-right">รวม</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printData.data.cart.map((item, idx) => (
+                <tr key={idx}>
+                  <td>{item.name}</td>
+                  <td>{item.qty}</td>
+                  <td className="text-right">{(item.price * item.qty).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="print-divider"></div>
+          <div className="print-total-section">
+            <div className="print-row total">
+              <span>รวมทั้งสิ้น</span>
+              <span>{printData.data.total.toLocaleString()}</span>
+            </div>
+            <div className="print-row">
+              <span>การชำระเงิน:</span>
+              <span>
+                {printData.data.payment === "cash" && "เงินสด"}
+                {printData.data.payment === "transfer" && "PromptPay"}
+                {printData.data.payment === "lineman" && "LINE MAN"}
+                {printData.data.payment === "grab" && "Grab"}
+              </span>
+            </div>
+            {printData.data.payment === "cash" && (
+              <>
+                <div className="print-row">
+                  <span>รับเงิน:</span>
+                  <span>{printData.data.cashReceived?.toLocaleString()}</span>
+                </div>
+                <div className="print-row">
+                  <span>เงินทอน:</span>
+                  <span>{printData.data.change?.toLocaleString()}</span>
+                </div>
+              </>
+            )}
+            {printData.data.payment === "lineman" && printData.data.linemanOrderId && (
+              <div className="print-row">
+                <span>เลข Order:</span>
+                <span>{printData.data.linemanOrderId}</span>
+              </div>
+            )}
+            {printData.data.payment === "grab" && printData.data.grabOrderId && (
+              <div className="print-row">
+                <span>เลข Order:</span>
+                <span>{printData.data.grabOrderId}</span>
+              </div>
+            )}
+          </div>
+          <div className="print-footer">ขอบคุณที่ใช้บริการ</div>
         </div>
       )}
       </>
@@ -1189,9 +1272,59 @@ export default function App() {
               </button>
             </div>
 
-            {history.length === 0 ? (
+            {dayData && (
+              <div className="report-list" style={{ marginBottom: "16px" }}>
+                <details className="report-day">
+                  <summary className="report-summary">
+                    <div className="report-summary-left">
+                      <span className="report-date">{dayData.date} — วันนี้</span>
+                      <span className="report-time">{dayData.openTime} - ยังไม่ปิด</span>
+                    </div>
+                    <div className="report-summary-right">
+                      <span className="report-total">
+                        {(dayData.bills || []).reduce((s, b) => s + b.total, 0).toLocaleString()} บาท
+                      </span>
+                    </div>
+                  </summary>
+                  <div className="report-details">
+                    <div className="report-bills">
+                      <h4>รายการบิลทั้งหมด ({(dayData.bills || []).length} บิล)</h4>
+                      {(dayData.bills || []).map((b, j) => (
+                        <div key={j} className="report-bill">
+                          <div className="bill-header">
+                            <span className="bill-time">{b.time}</span>
+                            <span className={`bill-payment payment-${b.payment}`}>
+                              {b.payment === "cash" && "💵 เงินสด"}
+                              {b.payment === "transfer" && "📱 PromptPay"}
+                              {b.payment === "lineman" && "🛵 LINE MAN"}
+                              {b.payment === "grab" && "🟢 Grab"}
+                            </span>
+                            <span className="bill-total">{b.total.toLocaleString()} บาท</span>
+                            <button
+                              style={{ marginLeft: "4px", padding: "2px 6px", fontSize: "12px", background: "#6c757d", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                              onClick={() => printBill(b, dayData.date)}
+                            >
+                              🖨️
+                            </button>
+                          </div>
+                          <div className="bill-items">
+                            {b.cart.map((c, k) => (
+                              <div key={k} className="bill-item">
+                                {c.name} × {c.qty} = {(c.price * c.qty).toLocaleString()} บาท
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </details>
+              </div>
+            )}
+
+            {history.length === 0 && !dayData ? (
               <div className="report-empty">ยังไม่มีข้อมูลย้อนหลัง</div>
-            ) : (
+            ) : history.length === 0 ? null : (
               <div className="report-list">
                 {history.map((d, i) => {
                   const totalSales = d.bills.reduce((s, b) => s + b.total, 0);
@@ -1203,6 +1336,9 @@ export default function App() {
                     .reduce((s, b) => s + b.total, 0);
                   const linemanSales = d.bills
                     .filter((b) => b.payment === "lineman")
+                    .reduce((s, b) => s + b.total, 0);
+                  const grabSales = d.bills
+                    .filter((b) => b.payment === "grab")
                     .reduce((s, b) => s + b.total, 0);
 
                   return (
@@ -1230,7 +1366,7 @@ export default function App() {
                             }}
                             onClick={(e) => {
                               e.preventDefault();
-                              printCloseDay({ ...d, totalSales, cashSales, transferSales, linemanSales });
+                              printCloseDay({ ...d, totalSales, cashSales, transferSales, linemanSales, grabSales });
                             }}
                           >
                             🖨️ พิมพ์
@@ -1259,6 +1395,10 @@ export default function App() {
                             <span>🛵 LINE MAN:</span>
                             <span>{linemanSales.toLocaleString()} บาท</span>
                           </div>
+                          <div className="report-summary-row">
+                            <span>🟢 Grab:</span>
+                            <span>{grabSales.toLocaleString()} บาท</span>
+                          </div>
                         </div>
                         <div className="report-bills">
                           <h4>รายการบิลทั้งหมด ({d.bills.length} บิล)</h4>
@@ -1281,7 +1421,7 @@ export default function App() {
                                 </button>}
                                 <button
                                   style={{ marginLeft: '4px', padding: '2px 6px', fontSize: '12px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                                  onClick={() => printBill(b)}
+                                  onClick={() => printBill(b, d.date)}
                                 >
                                   🖨️
                                 </button>
@@ -1395,6 +1535,10 @@ export default function App() {
                 <span>- LINE MAN:</span>
                 <span>{printData.data.linemanSales.toLocaleString()}</span>
               </div>
+              <div className="print-row">
+                <span>- Grab:</span>
+                <span>{(printData.data.grabSales || 0).toLocaleString()}</span>
+              </div>
 
               <div className="print-divider"></div>
 
@@ -1407,6 +1551,73 @@ export default function App() {
             <div className="print-footer">
               (เอกสารสำเนา)
             </div>
+          </div>
+        )}
+        {printData && printData.type === "bill" && (
+          <div className="print-area">
+            <div className="print-header">
+              <h1 className="print-title">{BRANCH_NAME}</h1>
+              <div className="print-info">วันที่: {printData.data.printDate || dayData?.date} เวลา: {printData.data.time}</div>
+            </div>
+            <table className="print-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '50%' }}>รายการ</th>
+                  <th style={{ width: '20%' }}>จน.</th>
+                  <th style={{ width: '30%' }} className="text-right">รวม</th>
+                </tr>
+              </thead>
+              <tbody>
+                {printData.data.cart.map((item, idx) => (
+                  <tr key={idx}>
+                    <td>{item.name}</td>
+                    <td>{item.qty}</td>
+                    <td className="text-right">{(item.price * item.qty).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="print-divider"></div>
+            <div className="print-total-section">
+              <div className="print-row total">
+                <span>รวมทั้งสิ้น</span>
+                <span>{printData.data.total.toLocaleString()}</span>
+              </div>
+              <div className="print-row">
+                <span>การชำระเงิน:</span>
+                <span>
+                  {printData.data.payment === "cash" && "เงินสด"}
+                  {printData.data.payment === "transfer" && "PromptPay"}
+                  {printData.data.payment === "lineman" && "LINE MAN"}
+                  {printData.data.payment === "grab" && "Grab"}
+                </span>
+              </div>
+              {printData.data.payment === "cash" && (
+                <>
+                  <div className="print-row">
+                    <span>รับเงิน:</span>
+                    <span>{printData.data.cashReceived?.toLocaleString()}</span>
+                  </div>
+                  <div className="print-row">
+                    <span>เงินทอน:</span>
+                    <span>{printData.data.change?.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
+              {printData.data.payment === "lineman" && printData.data.linemanOrderId && (
+                <div className="print-row">
+                  <span>เลข Order:</span>
+                  <span>{printData.data.linemanOrderId}</span>
+                </div>
+              )}
+              {printData.data.payment === "grab" && printData.data.grabOrderId && (
+                <div className="print-row">
+                  <span>เลข Order:</span>
+                  <span>{printData.data.grabOrderId}</span>
+                </div>
+              )}
+            </div>
+            <div className="print-footer">ขอบคุณที่ใช้บริการ</div>
           </div>
         )}
       </>
