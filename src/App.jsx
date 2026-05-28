@@ -145,28 +145,18 @@ export default function App() {
 
   /* ---------- Printing ---------- */
   const [printData, setPrintData] = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
   const [lastBill, setLastBill] = useState(null);
   const [editingBill, setEditingBill] = useState(null);
   const [editTotalValue, setEditTotalValue] = useState("");
 
   useEffect(() => {
     if (printData) {
-      const html = generateReceiptHTML(printData);
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:fixed;bottom:0;left:0;width:0;height:0;border:none;visibility:hidden;';
-      document.body.appendChild(iframe);
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      doc.open();
-      doc.write(html);
-      doc.close();
-      iframe.contentWindow.focus();
-      setTimeout(() => {
-        iframe.contentWindow.print();
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          setPrintData(null);
-        }, 1000);
-      }, 250);
+      const timer = setTimeout(() => {
+        window.print();
+        setPrintData(null);
+      }, 200);
+      return () => clearTimeout(timer);
     }
   }, [printData]);
 
@@ -290,19 +280,7 @@ export default function App() {
     return `<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">${style}</head><body>${content}</body></html>`;
   };
 
-  const sendToPassPRNT = (htmlContent) => {
-    // Encode HTML for URL
-    const encodedHtml = encodeURIComponent(htmlContent);
-    // Construct PassPRNT URL
-    // back=... URL to return to. We use current page.
-    const backUrl = encodeURIComponent(window.location.href);
 
-    // PassPRNT URL Scheme: starpassprnt://v1/print/nopreview?html=[html]&back=[url]
-    // Using nopreview for direct printing. Can use 'print' or 'preview' as well.
-    const url = `starpassprnt://v1/print/nopreview?html=${encodedHtml}&back=${backUrl}&size=3`; // size=3 is 80mm generally ("3inch") - though html css width often controls layout, PassPRNT setting helps.
-
-    window.location.href = url;
-  };
 
   const printBill = (billData) => {
     setPrintData({ type: "bill", data: billData });
