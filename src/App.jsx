@@ -381,8 +381,6 @@ export default function App() {
     localStorage.removeItem("currentCashReceived");
     localStorage.removeItem("currentLinemanOrderId");
 
-    // Auto print bill
-    printBill(bill);
   };
 
   /* ---------- Pages ---------- */
