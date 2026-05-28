@@ -4,6 +4,22 @@ import "./App.css";
 
 /* ------------------ CONFIG ------------------ */
 const BRANCH_NAME = "ไก่ย้อย สาขาเกตเวย์ บางซื่อ";
+const LINEMAN_MARKUP = 1.2;
+
+const findMenuItem = (id) => {
+  for (const cat of menu) {
+    const found = cat.items.find((i) => i.id === id);
+    if (found) return found;
+  }
+  return null;
+};
+
+const getEffectivePrice = (item, paymentMethod) => {
+  const menuItem = findMenuItem(item.id) ?? item;
+  if (paymentMethod === "grab") return menuItem.grabPrice ?? menuItem.price;
+  if (paymentMethod === "lineman") return Math.round(menuItem.price * LINEMAN_MARKUP);
+  return menuItem.price;
+};
 
 /* ------------------ APP ------------------ */
 export default function App() {
@@ -288,7 +304,7 @@ export default function App() {
   };
 
   /* ---------- Helpers ---------- */
-  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const total = cart.reduce((s, i) => s + getEffectivePrice(i, payment) * i.qty, 0);
   const change = payment === "cash" && cashReceived ? Number(cashReceived) - total : 0;
 
   const addItem = (item) => {
@@ -323,7 +339,7 @@ export default function App() {
 
     const bill = {
       time: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
-      cart: [...cart],
+      cart: cart.map(i => ({ ...i, price: getEffectivePrice(i, payment) })),
       total,
       payment,
       cashReceived: payment === "cash" ? Number(cashReceived) : null,
@@ -421,6 +437,9 @@ export default function App() {
               <span className="date-info">{dayData.date}</span>
             </div>
             <div className="header-actions">
+              <button className="btn-header" onClick={() => setPage("today")}>
+                รายการวันนี้
+              </button>
               <button className="btn-header" onClick={() => setPage("close")}>
                 ปิดวัน
               </button>
@@ -445,7 +464,7 @@ export default function App() {
                           onClick={() => addItem(i)}
                         >
                           <div className="menu-item-name">{i.name}</div>
-                          <div className="menu-item-price">{i.price} บาท</div>
+                          <div className="menu-item-price">{getEffectivePrice(i, payment)} บาท</div>
                         </button>
                       ))}
                     </div>
@@ -467,7 +486,7 @@ export default function App() {
                         <div className="cart-item-info">
                           <div className="cart-item-name">{i.name}</div>
                           <div className="cart-item-details">
-                            {i.price} บาท × {i.qty} = {i.price * i.qty} บาท
+                            {getEffectivePrice(i, payment)} บาท × {i.qty} = {getEffectivePrice(i, payment) * i.qty} บาท
                           </div>
                         </div>
                         <div className="cart-item-actions">
@@ -712,6 +731,103 @@ export default function App() {
           </div>
         )}
       </>
+    );
+  }
+
+  /* TODAY ORDERS */
+  if (page === "today") {
+    if (!dayData) {
+      setPage("open");
+      return null;
+    }
+
+    const bills = dayData.bills || [];
+    const totalSales = bills.reduce((s, b) => s + b.total, 0);
+    const cashSales = bills.filter((b) => b.payment === "cash").reduce((s, b) => s + b.total, 0);
+    const transferSales = bills.filter((b) => b.payment === "transfer").reduce((s, b) => s + b.total, 0);
+    const linemanSales = bills.filter((b) => b.payment === "lineman").reduce((s, b) => s + b.total, 0);
+    const grabSales = bills.filter((b) => b.payment === "grab").reduce((s, b) => s + b.total, 0);
+
+    return (
+      <div className="screen report-page">
+        <div className="report-content">
+          <div className="report-header">
+            <h2>รายการวันนี้ — {dayData.date}</h2>
+            <button className="btn-back" onClick={() => setPage("sell")}>
+              ← กลับขาย
+            </button>
+          </div>
+
+          <div className="sales-summary" style={{ marginBottom: "16px" }}>
+            <div className="summary-box">
+              <div className="summary-item">
+                <span>บิลทั้งหมด:</span>
+                <span className="amount">{bills.length} บิล</span>
+              </div>
+              <div className="summary-item">
+                <span>ยอดขายรวม:</span>
+                <span className="amount">{totalSales.toLocaleString()} บาท</span>
+              </div>
+              <div className="summary-item">
+                <span>💵 เงินสด:</span>
+                <span className="amount">{cashSales.toLocaleString()} บาท</span>
+              </div>
+              <div className="summary-item">
+                <span>📱 PromptPay:</span>
+                <span className="amount">{transferSales.toLocaleString()} บาท</span>
+              </div>
+              <div className="summary-item">
+                <span>🛵 LINE MAN:</span>
+                <span className="amount">{linemanSales.toLocaleString()} บาท</span>
+              </div>
+              <div className="summary-item">
+                <span>🟢 Grab:</span>
+                <span className="amount">{grabSales.toLocaleString()} บาท</span>
+              </div>
+            </div>
+          </div>
+
+          {bills.length === 0 ? (
+            <div className="report-empty">ยังไม่มีบิลวันนี้</div>
+          ) : (
+            <div className="report-list">
+              {[...bills].reverse().map((b, i) => (
+                <div key={i} className="report-bill">
+                  <div className="bill-header">
+                    <span className="bill-time">{b.time}</span>
+                    <span className={`bill-payment payment-${b.payment}`}>
+                      {b.payment === "cash" && "💵 เงินสด"}
+                      {b.payment === "transfer" && "📱 PromptPay"}
+                      {b.payment === "lineman" && "🛵 LINE MAN"}
+                      {b.payment === "grab" && "🟢 Grab"}
+                    </span>
+                    <span className="bill-total">{b.total.toLocaleString()} บาท</span>
+                    <button
+                      style={{ marginLeft: "8px", padding: "2px 6px", fontSize: "12px", background: "#6c757d", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                      onClick={() => printBill(b)}
+                    >
+                      🖨️
+                    </button>
+                  </div>
+                  <div className="bill-items">
+                    {b.cart.map((c, k) => (
+                      <div key={k} className="bill-item">
+                        {c.name} × {c.qty} = {(c.price * c.qty).toLocaleString()} บาท
+                      </div>
+                    ))}
+                  </div>
+                  {b.payment === "lineman" && b.linemanOrderId && (
+                    <div className="bill-cash-info">🛵 Order: {b.linemanOrderId}</div>
+                  )}
+                  {b.payment === "grab" && b.grabOrderId && (
+                    <div className="bill-cash-info">🟢 Order: {b.grabOrderId}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     );
   }
 
