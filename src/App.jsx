@@ -151,30 +151,22 @@ export default function App() {
 
   useEffect(() => {
     if (printData) {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const html = generateReceiptHTML(printData);
-
-      if (isIOS) {
-        sendToPassPRNT(html);
-        setPrintData(null);
-      } else {
-        // Print via hidden iframe — avoids opening a new tab
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position:fixed;bottom:0;left:0;width:0;height:0;border:none;visibility:hidden;';
-        document.body.appendChild(iframe);
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        doc.open();
-        doc.write(html);
-        doc.close();
-        iframe.contentWindow.focus();
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;bottom:0;left:0;width:0;height:0;border:none;visibility:hidden;';
+      document.body.appendChild(iframe);
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+      iframe.contentWindow.focus();
+      setTimeout(() => {
+        iframe.contentWindow.print();
         setTimeout(() => {
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            setPrintData(null);
-          }, 1000);
-        }, 250);
-      }
+          document.body.removeChild(iframe);
+          setPrintData(null);
+        }, 1000);
+      }, 250);
     }
   }, [printData]);
 
