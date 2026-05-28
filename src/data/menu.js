@@ -40,6 +40,7 @@ export const menu = [
       { id: 33, name: "ซุปเปอร์แซ่บ", price: 80 },
       { id: 34, name: "คะน้าฮ่องกงน้ำมันหอย", price: 110 },
       { id: 35, name: "ขาไก่พะโล้", price: 130 },
+      { id: 36, name: "กล่อง", price: 5 },
     ].sort((a, b) => a.price - b.price),
   },
 ];
