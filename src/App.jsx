@@ -145,6 +145,7 @@ export default function App() {
 
   /* ---------- Printing ---------- */
   const [printData, setPrintData] = useState(null);
+  const [lastBill, setLastBill] = useState(null);
 
   useEffect(() => {
     if (printData) {
@@ -369,6 +370,7 @@ export default function App() {
     };
 
     setDayData(updatedDayData);
+    setLastBill(bill);
     setCart([]);
     setCashReceived("");
     setLinemanOrderId("");
@@ -683,6 +685,39 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {/* Bill Confirmation Popup */}
+        {lastBill && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+            <div style={{ background: "#fff", borderRadius: "12px", padding: "24px", width: "100%", maxWidth: "320px", textAlign: "center" }}>
+              <div style={{ fontSize: "36px", marginBottom: "8px" }}>✅</div>
+              <div style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "4px" }}>ปิดบิลสำเร็จ</div>
+              <div style={{ fontSize: "28px", fontWeight: "bold", color: "#2d7a3a", margin: "12px 0" }}>
+                {lastBill.total.toLocaleString()} บาท
+              </div>
+              <div style={{ fontSize: "14px", color: "#666", marginBottom: "16px" }}>
+                {lastBill.payment === "cash" && `💵 เงินสด • ทอน ${lastBill.change?.toLocaleString()} บาท`}
+                {lastBill.payment === "transfer" && "📱 PromptPay"}
+                {lastBill.payment === "lineman" && `🛵 LINE MAN${lastBill.linemanOrderId ? ` • ${lastBill.linemanOrderId}` : ""}`}
+                {lastBill.payment === "grab" && `🟢 Grab${lastBill.grabOrderId ? ` • ${lastBill.grabOrderId}` : ""}`}
+              </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  style={{ flex: 1, padding: "12px", fontSize: "16px", background: "#6c757d", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}
+                  onClick={() => setLastBill(null)}
+                >
+                  ปิด
+                </button>
+                <button
+                  style={{ flex: 1, padding: "12px", fontSize: "16px", background: "#2d7a3a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}
+                  onClick={() => { printBill(lastBill); setLastBill(null); }}
+                >
+                  🖨️ พิมพ์
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Print Area - Hidden on Screen */}
         {printData && (
