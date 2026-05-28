@@ -894,12 +894,14 @@ export default function App() {
                       {b.payment === "grab" && "🟢 Grab"}
                     </span>
                     <span className="bill-total">{b.total.toLocaleString()} บาท</span>
-                    <button
-                      style={{ marginLeft: "8px", padding: "2px 6px", fontSize: "12px", background: "#ffc107", color: "#000", border: "none", borderRadius: "4px", cursor: "pointer" }}
-                      onClick={() => openEditBill("today", realIndex, null, b.total)}
-                    >
-                      แก้
-                    </button>
+                    {(b.payment === "grab" || b.payment === "lineman") && (
+                      <button
+                        style={{ marginLeft: "8px", padding: "2px 6px", fontSize: "12px", background: "#ffc107", color: "#000", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                        onClick={() => openEditBill("today", realIndex, null, b.total)}
+                      >
+                        แก้
+                      </button>
+                    )}
                     <button
                       style={{ marginLeft: "4px", padding: "2px 6px", fontSize: "12px", background: "#6c757d", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
                       onClick={() => printBill(b)}
@@ -1293,12 +1295,12 @@ export default function App() {
                                   {b.payment === "grab" && "🟢 Grab"}
                                 </span>
                                 <span className="bill-total">{b.total.toLocaleString()} บาท</span>
-                                <button
+                                {(b.payment === "grab" || b.payment === "lineman") && <button
                                   style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '12px', background: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                   onClick={() => openEditBill("history", j, i, b.total)}
                                 >
                                   แก้
-                                </button>
+                                </button>}
                                 <button
                                   style={{ marginLeft: '4px', padding: '2px 6px', fontSize: '12px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                   onClick={() => printBill(b)}
