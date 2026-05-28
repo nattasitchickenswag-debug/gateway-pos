@@ -32,6 +32,12 @@ export const menu = [
     ].sort((a, b) => a.price - b.price),
   },
   {
+    category: "ท้อปปิ้ง",
+    items: [
+      { id: 40, name: "ตับ", price: 20 },
+    ].sort((a, b) => a.price - b.price),
+  },
+  {
     category: "เมนูเสริม",
     items: [
       { id: 30, name: "ไข่ตาหวาน", price: 20 },

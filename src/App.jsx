@@ -15,6 +15,9 @@ const findMenuItem = (id) => {
 };
 
 const getEffectivePrice = (item, paymentMethod) => {
+  if ((paymentMethod === "grab" || paymentMethod === "lineman") && item.deliveryPrice !== undefined) {
+    return item.deliveryPrice;
+  }
   const menuItem = findMenuItem(item.id) ?? item;
   if (paymentMethod === "grab") return menuItem.grabPrice ?? menuItem.price;
   if (paymentMethod === "lineman") return Math.round(menuItem.price * LINEMAN_MARKUP);
@@ -318,6 +321,17 @@ export default function App() {
     });
   };
 
+  const setItemDeliveryPrice = (itemId, value) => {
+    const num = parseFloat(value);
+    setCart((prev) =>
+      prev.map((i) =>
+        i.id === itemId
+          ? { ...i, deliveryPrice: value === "" || isNaN(num) ? undefined : num }
+          : i
+      )
+    );
+  };
+
   const removeItem = (itemId) => {
     setCart((prev) => {
       const item = prev.find((i) => i.id === itemId);
@@ -486,7 +500,20 @@ export default function App() {
                         <div className="cart-item-info">
                           <div className="cart-item-name">{i.name}</div>
                           <div className="cart-item-details">
-                            {getEffectivePrice(i, payment)} บาท × {i.qty} = {getEffectivePrice(i, payment) * i.qty} บาท
+                            {(payment === "grab" || payment === "lineman") ? (
+                              <>
+                                <input
+                                  type="number"
+                                  inputMode="numeric"
+                                  style={{ width: "60px", fontSize: "14px", padding: "2px 4px", textAlign: "right", border: "1px solid #aaa", borderRadius: "4px", marginRight: "2px" }}
+                                  value={i.deliveryPrice !== undefined ? i.deliveryPrice : getEffectivePrice(i, payment)}
+                                  onChange={(e) => setItemDeliveryPrice(i.id, e.target.value)}
+                                />
+                                {" บาท × "}{i.qty}{" = "}{getEffectivePrice(i, payment) * i.qty}{" บาท"}
+                              </>
+                            ) : (
+                              `${getEffectivePrice(i, payment)} บาท × ${i.qty} = ${getEffectivePrice(i, payment) * i.qty} บาท`
+                            )}
                           </div>
                         </div>
                         <div className="cart-item-actions">
