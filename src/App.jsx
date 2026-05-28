@@ -37,6 +37,10 @@ export default function App() {
     return localStorage.getItem("currentLinemanOrderId") || "";
   });
 
+  const [grabOrderId, setGrabOrderId] = useState(() => {
+    return localStorage.getItem("currentGrabOrderId") || "";
+  });
+
   const [dayData, setDayData] = useState(() => {
     const stored = localStorage.getItem("currentDay");
     if (!stored) return null;
@@ -55,6 +59,7 @@ export default function App() {
 
   // Close-day extra fields
   const [linemanInput, setLinemanInput] = useState("");
+  const [grabInput, setGrabInput] = useState("");
   const [kaiTon, setKaiTon] = useState("");
   const [nongSaPok, setNongSaPok] = useState("");
   // Load dayData from Local Storage when component mounts
@@ -104,6 +109,15 @@ export default function App() {
       localStorage.removeItem("currentLinemanOrderId");
     }
   }, [linemanOrderId]);
+
+  // Persist grabOrderId state
+  useEffect(() => {
+    if (grabOrderId) {
+      localStorage.setItem("currentGrabOrderId", grabOrderId);
+    } else {
+      localStorage.removeItem("currentGrabOrderId");
+    }
+  }, [grabOrderId]);
 
   // Persist page state
   useEffect(() => {
@@ -203,6 +217,7 @@ export default function App() {
               ${data.payment === "cash" ? "เงินสด" : ""}
               ${data.payment === "transfer" ? "PromptPay" : ""}
               ${data.payment === "lineman" ? "LINE MAN" : ""}
+              ${data.payment === "grab" ? "Grab" : ""}
             </span>
           </div>
           ${data.payment === "cash" ? `
@@ -211,6 +226,9 @@ export default function App() {
           ` : ""}
           ${data.payment === "lineman" && data.linemanOrderId ? `
             <div class="total-row"><span>เลข Order:</span><span>${data.linemanOrderId}</span></div>
+          ` : ""}
+          ${data.payment === "grab" && data.grabOrderId ? `
+            <div class="total-row"><span>เลข Order:</span><span>${data.grabOrderId}</span></div>
           ` : ""}
         </div>
         <div class="footer">ขอบคุณที่ใช้บริการ</div>
@@ -233,6 +251,7 @@ export default function App() {
           <div class="total-row"><span>- เงินสด:</span><span>${data.cashSales.toLocaleString()}</span></div>
           <div class="total-row"><span>- PromptPay:</span><span>${data.transferSales.toLocaleString()}</span></div>
           <div class="total-row"><span>- LINE MAN:</span><span>${data.linemanSales.toLocaleString()}</span></div>
+          <div class="total-row"><span>- Grab:</span><span>${(data.grabSales || 0).toLocaleString()}</span></div>
           <div class="divider"></div>
           <div class="total-row grand-total"><span>เงินสดที่ต้องส่ง:</span><span>${(data.openCash + data.cashSales).toLocaleString()}</span></div>
         </div>
@@ -310,6 +329,7 @@ export default function App() {
       cashReceived: payment === "cash" ? Number(cashReceived) : null,
       change: payment === "cash" ? change : null,
       linemanOrderId: payment === "lineman" ? linemanOrderId.trim() : null,
+      grabOrderId: payment === "grab" ? grabOrderId.trim() : null,
     };
 
     const updatedDayData = {
@@ -322,6 +342,8 @@ export default function App() {
     setCart([]);
     setCashReceived("");
     setLinemanOrderId("");
+    setGrabOrderId("");
+    localStorage.removeItem("currentGrabOrderId");
     setPayment("cash");
     // Clear persisted cart/payment after successful bill
     localStorage.removeItem("currentCart");
@@ -504,6 +526,15 @@ export default function App() {
                       >
                         🛵 LINE MAN
                       </button>
+                      <button
+                        className={`payment-btn grab-btn ${payment === "grab" ? "active" : ""}`}
+                        onClick={() => {
+                          setPayment("grab");
+                          setCashReceived("");
+                        }}
+                      >
+                        🟢 Grab
+                      </button>
                     </div>
                   </div>
 
@@ -560,6 +591,24 @@ export default function App() {
                             placeholder="กรอกเลข order LINE MAN"
                             value={linemanOrderId}
                             onChange={(e) => setLinemanOrderId(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {payment === "grab" && (
+                      <div className="payment-summary-content">
+                        <div className="summary-info-row">
+                          <span>ยอดรวม (Grab):</span>
+                          <span className="summary-value">{total.toLocaleString()} บาท</span>
+                        </div>
+                        <div className="lineman-order-row">
+                          <span className="lineman-order-label">🟢 เลข Order:</span>
+                          <input
+                            type="text"
+                            className="grab-order-input"
+                            placeholder="กรอกเลข order Grab"
+                            value={grabOrderId}
+                            onChange={(e) => setGrabOrderId(e.target.value)}
                           />
                         </div>
                       </div>
@@ -751,6 +800,16 @@ export default function App() {
                 />
               </div>
               <div className="extra-field">
+                <label>ยอด Grab รวม (จาก Grab Merchant)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={grabInput}
+                  onChange={(e) => setGrabInput(e.target.value)}
+                  className="extra-input"
+                />
+              </div>
+              <div className="extra-field">
                 <label>ไก่ต้ม (ตัว)</label>
                 <input
                   type="number"
@@ -784,10 +843,12 @@ export default function App() {
                 onClick={() => {
                   const closeTime = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
                   const linemanTotal = Number(linemanInput) || 0;
+                  const grabTotal = Number(grabInput) || 0;
                   const updatedDayData = {
                     ...dayData,
                     closeTime,
                     linemanTotal,
+                    grabTotal,
                     kaiTon: Number(kaiTon) || 0,
                     nongSaPok: Number(nongSaPok) || 0,
                   };
@@ -800,6 +861,7 @@ export default function App() {
                   setDayData(null);
                   localStorage.removeItem("currentDay");
                   setLinemanInput("");
+                  setGrabInput("");
                   setKaiTon("");
                   setNongSaPok("");
 
@@ -814,13 +876,14 @@ export default function App() {
                       openCash: updatedDayData.openCash,
                       bills: updatedDayData.bills,
                       linemanTotal,
+                      grabTotal,
                       kaiTon: updatedDayData.kaiTon,
                       nongSaPok: updatedDayData.nongSaPok,
                     }),
                   }).catch((err) => console.error("close-day sheet error:", err));
 
                   // Print Close Day Summary
-                  printCloseDay({ ...updatedDayData, totalSales, cashSales, transferSales, linemanSales: linemanTotal });
+                  printCloseDay({ ...updatedDayData, totalSales, cashSales, transferSales, linemanSales: linemanTotal, grabSales: grabTotal });
 
                   setTimeout(() => setPage("open"), 1000);
                 }}
@@ -992,6 +1055,7 @@ export default function App() {
                                   {b.payment === "cash" && "💵 เงินสด"}
                                   {b.payment === "transfer" && "📱 PromptPay"}
                                   {b.payment === "lineman" && "🛵 LINE MAN"}
+                                  {b.payment === "grab" && "🟢 Grab"}
                                 </span>
                                 <span className="bill-total">{b.total.toLocaleString()} บาท</span>
                                 <button
@@ -1026,6 +1090,11 @@ export default function App() {
                               {b.payment === "lineman" && b.linemanOrderId && (
                                 <div className="bill-cash-info">
                                   🛵 Order: {b.linemanOrderId}
+                                </div>
+                              )}
+                              {b.payment === "grab" && b.grabOrderId && (
+                                <div className="bill-cash-info">
+                                  🟢 Order: {b.grabOrderId}
                                 </div>
                               )}
                             </div>

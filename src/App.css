@@ -981,3 +981,21 @@ body {
   border-color: #009900;
   box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.15);
 }
+
+/* Grab button */
+.grab-btn { border-color: #00B14F !important; color: #00B14F !important; }
+.grab-btn.active { background: #00B14F !important; color: white !important; border-color: #00B14F !important; }
+
+/* Grab order input */
+.grab-order-input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 16px;
+  border: 2px solid #00B14F;
+  border-radius: 8px;
+  outline: none;
+}
+.grab-order-input:focus {
+  border-color: #009940;
+  box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.15);
+}
