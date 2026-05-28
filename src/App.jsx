@@ -146,6 +146,8 @@ export default function App() {
   /* ---------- Printing ---------- */
   const [printData, setPrintData] = useState(null);
   const [lastBill, setLastBill] = useState(null);
+  const [editingBill, setEditingBill] = useState(null);
+  const [editTotalValue, setEditTotalValue] = useState("");
 
   useEffect(() => {
     if (printData) {
@@ -320,6 +322,30 @@ export default function App() {
         );
       return [...prev, { ...item, qty: 1 }];
     });
+  };
+
+  const openEditBill = (source, billIndex, dayIndex, currentTotal) => {
+    setEditingBill({ source, billIndex, dayIndex });
+    setEditTotalValue(String(currentTotal));
+  };
+
+  const saveEditedBill = () => {
+    const newTotal = Number(editTotalValue);
+    if (isNaN(newTotal) || newTotal < 0) return;
+    if (editingBill.source === "today") {
+      const updatedBills = [...dayData.bills];
+      updatedBills[editingBill.billIndex] = { ...updatedBills[editingBill.billIndex], total: newTotal };
+      setDayData({ ...dayData, bills: updatedBills });
+    } else {
+      const updatedHistory = history.map((d, di) => {
+        if (di !== editingBill.dayIndex) return d;
+        const updatedBills = [...d.bills];
+        updatedBills[editingBill.billIndex] = { ...updatedBills[editingBill.billIndex], total: newTotal };
+        return { ...d, bills: updatedBills };
+      });
+      setHistory(updatedHistory);
+    }
+    setEditingBill(null);
   };
 
   const setItemDeliveryPrice = (itemId, value) => {
@@ -809,6 +835,7 @@ export default function App() {
     const grabSales = bills.filter((b) => b.payment === "grab").reduce((s, b) => s + b.total, 0);
 
     return (
+      <>
       <div className="screen report-page">
         <div className="report-content">
           <div className="report-header">
@@ -851,7 +878,9 @@ export default function App() {
             <div className="report-empty">ยังไม่มีบิลวันนี้</div>
           ) : (
             <div className="report-list">
-              {[...bills].reverse().map((b, i) => (
+              {[...bills].reverse().map((b, i) => {
+                const realIndex = bills.length - 1 - i;
+                return (
                 <div key={i} className="report-bill">
                   <div className="bill-header">
                     <span className="bill-time">{b.time}</span>
@@ -863,7 +892,13 @@ export default function App() {
                     </span>
                     <span className="bill-total">{b.total.toLocaleString()} บาท</span>
                     <button
-                      style={{ marginLeft: "8px", padding: "2px 6px", fontSize: "12px", background: "#6c757d", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                      style={{ marginLeft: "8px", padding: "2px 6px", fontSize: "12px", background: "#ffc107", color: "#000", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                      onClick={() => openEditBill("today", realIndex, null, b.total)}
+                    >
+                      แก้
+                    </button>
+                    <button
+                      style={{ marginLeft: "4px", padding: "2px 6px", fontSize: "12px", background: "#6c757d", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
                       onClick={() => printBill(b)}
                     >
                       🖨️
@@ -883,11 +918,32 @@ export default function App() {
                     <div className="bill-cash-info">🟢 Order: {b.grabOrderId}</div>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>
       </div>
+      {editingBill && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#fff", borderRadius: "12px", padding: "24px", width: "100%", maxWidth: "300px" }}>
+            <div style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "16px" }}>แก้ยอดรวมบิล</div>
+            <input
+              type="number"
+              inputMode="numeric"
+              style={{ width: "100%", fontSize: "24px", padding: "10px", textAlign: "center", border: "2px solid #2d7a3a", borderRadius: "8px", boxSizing: "border-box", marginBottom: "16px" }}
+              value={editTotalValue}
+              onChange={(e) => setEditTotalValue(e.target.value)}
+              autoFocus
+            />
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button style={{ flex: 1, padding: "12px", fontSize: "16px", background: "#6c757d", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }} onClick={() => setEditingBill(null)}>ยกเลิก</button>
+              <button style={{ flex: 1, padding: "12px", fontSize: "16px", background: "#2d7a3a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }} onClick={saveEditedBill}>บันทึก</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 
@@ -1235,16 +1291,13 @@ export default function App() {
                                 </span>
                                 <span className="bill-total">{b.total.toLocaleString()} บาท</span>
                                 <button
-                                  style={{
-                                    marginLeft: '8px',
-                                    padding: '2px 6px',
-                                    fontSize: '12px',
-                                    background: '#6c757d',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer'
-                                  }}
+                                  style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '12px', background: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                  onClick={() => openEditBill("history", j, i, b.total)}
+                                >
+                                  แก้
+                                </button>
+                                <button
+                                  style={{ marginLeft: '4px', padding: '2px 6px', fontSize: '12px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                   onClick={() => printBill(b)}
                                 >
                                   🖨️
@@ -1285,6 +1338,37 @@ export default function App() {
 
           </div>
         </div>
+        {/* Edit Bill Total Modal */}
+        {editingBill && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+            <div style={{ background: "#fff", borderRadius: "12px", padding: "24px", width: "100%", maxWidth: "300px" }}>
+              <div style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "16px" }}>แก้ยอดรวมบิล</div>
+              <input
+                type="number"
+                inputMode="numeric"
+                style={{ width: "100%", fontSize: "24px", padding: "10px", textAlign: "center", border: "2px solid #2d7a3a", borderRadius: "8px", boxSizing: "border-box", marginBottom: "16px" }}
+                value={editTotalValue}
+                onChange={(e) => setEditTotalValue(e.target.value)}
+                autoFocus
+              />
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  style={{ flex: 1, padding: "12px", fontSize: "16px", background: "#6c757d", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}
+                  onClick={() => setEditingBill(null)}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  style={{ flex: 1, padding: "12px", fontSize: "16px", background: "#2d7a3a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}
+                  onClick={saveEditedBill}
+                >
+                  บันทึก
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Print Area - Reused for history reports */}
         {printData && printData.type === "closeDay" && (
           <div className="print-area">
