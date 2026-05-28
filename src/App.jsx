@@ -33,6 +33,10 @@ export default function App() {
     return stored || "";
   });
 
+  const [linemanOrderId, setLinemanOrderId] = useState(() => {
+    return localStorage.getItem("currentLinemanOrderId") || "";
+  });
+
   const [dayData, setDayData] = useState(() => {
     const stored = localStorage.getItem("currentDay");
     if (!stored) return null;
@@ -48,6 +52,11 @@ export default function App() {
   const [history, setHistory] = useState(() => {
     return JSON.parse(localStorage.getItem("history")) || [];
   });
+
+  // Close-day extra fields
+  const [linemanInput, setLinemanInput] = useState("");
+  const [kaiTon, setKaiTon] = useState("");
+  const [nongSaPok, setNongSaPok] = useState("");
   // Load dayData from Local Storage when component mounts
   useEffect(() => {
     const storedDayData = localStorage.getItem("currentDay");
@@ -86,6 +95,15 @@ export default function App() {
       localStorage.removeItem("currentCashReceived");
     }
   }, [cashReceived]);
+
+  // Persist linemanOrderId state
+  useEffect(() => {
+    if (linemanOrderId) {
+      localStorage.setItem("currentLinemanOrderId", linemanOrderId);
+    } else {
+      localStorage.removeItem("currentLinemanOrderId");
+    }
+  }, [linemanOrderId]);
 
   // Persist page state
   useEffect(() => {
@@ -191,6 +209,9 @@ export default function App() {
             <div class="total-row"><span>รับเงิน:</span><span>${data.cashReceived?.toLocaleString()}</span></div>
             <div class="total-row"><span>เงินทอน:</span><span>${data.change?.toLocaleString()}</span></div>
           ` : ""}
+          ${data.payment === "lineman" && data.linemanOrderId ? `
+            <div class="total-row"><span>เลข Order:</span><span>${data.linemanOrderId}</span></div>
+          ` : ""}
         </div>
         <div class="footer">ขอบคุณที่ใช้บริการ</div>
       `;
@@ -288,6 +309,7 @@ export default function App() {
       payment,
       cashReceived: payment === "cash" ? Number(cashReceived) : null,
       change: payment === "cash" ? change : null,
+      linemanOrderId: payment === "lineman" ? linemanOrderId.trim() : null,
     };
 
     const updatedDayData = {
@@ -299,11 +321,13 @@ export default function App() {
     setDayData(updatedDayData);
     setCart([]);
     setCashReceived("");
+    setLinemanOrderId("");
     setPayment("cash");
     // Clear persisted cart/payment after successful bill
     localStorage.removeItem("currentCart");
     localStorage.removeItem("currentPayment");
     localStorage.removeItem("currentCashReceived");
+    localStorage.removeItem("currentLinemanOrderId");
 
     // Auto print bill
     printBill(bill);
@@ -528,7 +552,16 @@ export default function App() {
                           <span>ยอดรวม (LINE MAN):</span>
                           <span className="summary-value">{total.toLocaleString()} บาท</span>
                         </div>
-                        <div className="payment-note">🛵 สั่งผ่าน LINE MAN</div>
+                        <div className="lineman-order-row">
+                          <span className="lineman-order-label">🛵 เลข Order:</span>
+                          <input
+                            type="text"
+                            className="lineman-order-input"
+                            placeholder="กรอกเลข order LINE MAN"
+                            value={linemanOrderId}
+                            onChange={(e) => setLinemanOrderId(e.target.value)}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -613,6 +646,12 @@ export default function App() {
                         <span>{printData.data.change?.toLocaleString()}</span>
                       </div>
                     </>
+                  )}
+                  {printData.data.payment === "lineman" && printData.data.linemanOrderId && (
+                    <div className="print-row">
+                      <span>เลข Order:</span>
+                      <span>{printData.data.linemanOrderId}</span>
+                    </div>
                   )}
                 </div>
 
@@ -699,6 +738,40 @@ export default function App() {
               </div>
             </div>
 
+            <div className="close-day-extra">
+              <h3>ข้อมูลเพิ่มเติม</h3>
+              <div className="extra-field">
+                <label>ยอด LINE MAN รวม (จาก LINE MAN Merchant)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={linemanInput}
+                  onChange={(e) => setLinemanInput(e.target.value)}
+                  className="extra-input"
+                />
+              </div>
+              <div className="extra-field">
+                <label>ไก่ต้ม (ตัว)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={kaiTon}
+                  onChange={(e) => setKaiTon(e.target.value)}
+                  className="extra-input"
+                />
+              </div>
+              <div className="extra-field">
+                <label>น่องสะโพก (กก.)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={nongSaPok}
+                  onChange={(e) => setNongSaPok(e.target.value)}
+                  className="extra-input"
+                />
+              </div>
+            </div>
+
             <div className="close-day-actions">
               <button
                 className="btn-secondary btn-large"
@@ -710,9 +783,13 @@ export default function App() {
                 className="btn-primary btn-large"
                 onClick={() => {
                   const closeTime = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+                  const linemanTotal = Number(linemanInput) || 0;
                   const updatedDayData = {
                     ...dayData,
                     closeTime,
+                    linemanTotal,
+                    kaiTon: Number(kaiTon) || 0,
+                    nongSaPok: Number(nongSaPok) || 0,
                   };
 
                   // Save history immediately
@@ -722,9 +799,12 @@ export default function App() {
 
                   setDayData(null);
                   localStorage.removeItem("currentDay");
+                  setLinemanInput("");
+                  setKaiTon("");
+                  setNongSaPok("");
 
                   // Save to Google Sheets
-                  fetch("https://bbc-ordering-v1.vercel.app/api/gateway-pos/close-day", {
+                  fetch("https://bbc-ordering-system.vercel.app/api/gateway-pos/close-day", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -733,11 +813,14 @@ export default function App() {
                       closeTime,
                       openCash: updatedDayData.openCash,
                       bills: updatedDayData.bills,
+                      linemanTotal,
+                      kaiTon: updatedDayData.kaiTon,
+                      nongSaPok: updatedDayData.nongSaPok,
                     }),
                   }).catch((err) => console.error("close-day sheet error:", err));
 
                   // Print Close Day Summary
-                  printCloseDay({ ...updatedDayData, totalSales, cashSales, transferSales, linemanSales });
+                  printCloseDay({ ...updatedDayData, totalSales, cashSales, transferSales, linemanSales: linemanTotal });
 
                   setTimeout(() => setPage("open"), 1000);
                 }}
@@ -938,6 +1021,11 @@ export default function App() {
                                 <div className="bill-cash-info">
                                   รับมา: {b.cashReceived.toLocaleString()} บาท |
                                   ทอน: {b.change.toLocaleString()} บาท
+                                </div>
+                              )}
+                              {b.payment === "lineman" && b.linemanOrderId && (
+                                <div className="bill-cash-info">
+                                  🛵 Order: {b.linemanOrderId}
                                 </div>
                               )}
                             </div>

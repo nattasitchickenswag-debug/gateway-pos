@@ -917,3 +917,67 @@ body {
   }
 }
 
+
+.close-day-extra {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.close-day-extra h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.extra-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.extra-field label {
+  font-size: 15px;
+  color: #555;
+  flex: 1;
+}
+
+.extra-input {
+  width: 120px;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  text-align: right;
+}
+
+/* LINE MAN order input in sell page */
+.lineman-order-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lineman-order-label {
+  font-size: 15px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.lineman-order-input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 16px;
+  border: 2px solid #00b900;
+  border-radius: 8px;
+  outline: none;
+}
+
+.lineman-order-input:focus {
+  border-color: #009900;
+  box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.15);
+}
