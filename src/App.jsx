@@ -77,8 +77,6 @@ export default function App() {
   });
 
   // Close-day extra fields
-  const [linemanInput, setLinemanInput] = useState("");
-  const [grabInput, setGrabInput] = useState("");
   const [kaiTon, setKaiTon] = useState("");
   const [nongSaPok, setNongSaPok] = useState("");
   // Load dayData from Local Storage when component mounts
@@ -1030,6 +1028,9 @@ export default function App() {
     const linemanSales = dayData.bills
       .filter((b) => b.payment === "lineman")
       .reduce((s, b) => s + b.total, 0);
+    const grabSales = dayData.bills
+      .filter((b) => b.payment === "grab")
+      .reduce((s, b) => s + b.total, 0);
 
     return (
       <>
@@ -1078,6 +1079,10 @@ export default function App() {
                   <span>🛵 LINE MAN:</span>
                   <span className="amount">{linemanSales.toLocaleString()} บาท</span>
                 </div>
+                <div className="summary-item">
+                  <span>🟢 Grab:</span>
+                  <span className="amount">{grabSales.toLocaleString()} บาท</span>
+                </div>
                 <div className="summary-item highlight">
                   <span>เงินสดที่ควรมี:</span>
                   <span className="amount">{(dayData.openCash + cashSales).toLocaleString()} บาท</span>
@@ -1087,26 +1092,6 @@ export default function App() {
 
             <div className="close-day-extra">
               <h3>ข้อมูลเพิ่มเติม</h3>
-              <div className="extra-field">
-                <label>ยอด LINE MAN รวม (จาก LINE MAN Merchant)</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={linemanInput}
-                  onChange={(e) => setLinemanInput(e.target.value)}
-                  className="extra-input"
-                />
-              </div>
-              <div className="extra-field">
-                <label>ยอด Grab รวม (จาก Grab Merchant)</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={grabInput}
-                  onChange={(e) => setGrabInput(e.target.value)}
-                  className="extra-input"
-                />
-              </div>
               <div className="extra-field">
                 <label>ไก่ต้ม (ตัว)</label>
                 <input
@@ -1140,13 +1125,9 @@ export default function App() {
                 className="btn-primary btn-large"
                 onClick={() => {
                   const closeTime = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-                  const linemanTotal = Number(linemanInput) || 0;
-                  const grabTotal = Number(grabInput) || 0;
                   const updatedDayData = {
                     ...dayData,
                     closeTime,
-                    linemanTotal,
-                    grabTotal,
                     kaiTon: Number(kaiTon) || 0,
                     nongSaPok: Number(nongSaPok) || 0,
                   };
@@ -1158,8 +1139,6 @@ export default function App() {
 
                   setDayData(null);
                   localStorage.removeItem("currentDay");
-                  setLinemanInput("");
-                  setGrabInput("");
                   setKaiTon("");
                   setNongSaPok("");
 
@@ -1173,15 +1152,13 @@ export default function App() {
                       closeTime,
                       openCash: updatedDayData.openCash,
                       bills: updatedDayData.bills,
-                      linemanTotal,
-                      grabTotal,
                       kaiTon: updatedDayData.kaiTon,
                       nongSaPok: updatedDayData.nongSaPok,
                     }),
                   }).catch((err) => console.error("close-day sheet error:", err));
 
                   // Print Close Day Summary
-                  printCloseDay({ ...updatedDayData, totalSales, cashSales, transferSales, linemanSales: linemanTotal, grabSales: grabTotal });
+                  printCloseDay({ ...updatedDayData, totalSales, cashSales, transferSales, linemanSales, grabSales });
 
                   setTimeout(() => setPage("open"), 1000);
                 }}
