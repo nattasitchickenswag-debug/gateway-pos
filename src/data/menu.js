@@ -47,6 +47,7 @@ export const menu = [
       { id: 34, name: "คะน้าฮ่องกงน้ำมันหอย", price: 110, grabPrice: 120 },
       { id: 35, name: "ขาไก่พะโล้", price: 130, grabPrice: 170 },
       { id: 36, name: "กล่อง", price: 5 },
+      { id: 37, name: "ข้าวสวย", price: 15 },
     ].sort((a, b) => a.price - b.price),
   },
 ];

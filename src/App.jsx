@@ -1155,7 +1155,11 @@ export default function App() {
                       kaiTon: updatedDayData.kaiTon,
                       nongSaPok: updatedDayData.nongSaPok,
                     }),
-                  }).catch((err) => console.error("close-day sheet error:", err));
+                  }).then((res) => {
+                    if (!res.ok) alert("⚠️ บันทึก Google Sheet ไม่สำเร็จ\nกรุณาแจ้ง admin (ข้อมูลวันนี้ยังอยู่ในเครื่อง)");
+                  }).catch(() => {
+                    alert("⚠️ บันทึก Google Sheet ไม่สำเร็จ\nกรุณาแจ้ง admin (ข้อมูลวันนี้ยังอยู่ในเครื่อง)");
+                  });
 
                   // Print Close Day Summary
                   printCloseDay({ ...updatedDayData, totalSales, cashSales, transferSales, linemanSales, grabSales });
@@ -1376,6 +1380,18 @@ export default function App() {
                             <span>🟢 Grab:</span>
                             <span>{grabSales.toLocaleString()} บาท</span>
                           </div>
+                          {(d.kaiTon > 0 || d.nongSaPok > 0) && (
+                            <>
+                              <div className="report-summary-row">
+                                <span>🐔 ไก่ต้ม:</span>
+                                <span>{d.kaiTon || 0} ตัว</span>
+                              </div>
+                              <div className="report-summary-row">
+                                <span>🍗 น่องสะโพก:</span>
+                                <span>{d.nongSaPok || 0} กก.</span>
+                              </div>
+                            </>
+                          )}
                         </div>
                         <div className="report-bills">
                           <h4>รายการบิลทั้งหมด ({d.bills.length} บิล)</h4>
